@@ -4,12 +4,12 @@ const app = express();
 const port = 8000;
 
 ///bringing routes
-const {getPosts} = require("./routes/post");
+const postRoutes = require("./routes/post");
 
 //middleware
 app.use(morgan('dev'));
 
-app.get('/', getPosts);
+app.use('/', postRoutes);
 
 app.listen(port, '127.0.0.1', () => {
     console.log(`A node js API is listening on port ${port}`);
