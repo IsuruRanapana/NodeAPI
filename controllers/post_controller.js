@@ -17,10 +17,33 @@ const getPosts = asyncHandler(async (req, res) => {
   }
 });
 
+const getMyPosts = asyncHandler(async (req, res) => {
+  try {
+    const { user } = req;
+    if (!user) {
+      console.log("Unauthorized");
+      throw new Error("User is not found");
+    }
+
+    const posts = await postModel.find({ author: user.name });
+    if (!posts) {
+      res.status(400).json({
+        message: "No posts found",
+      });
+    } else {
+      res.json(posts);
+    }
+  } catch (e) {
+    console.log(e);
+    throw new Error("Error in posts schema x");
+  }
+});
+
 const findPosts = asyncHandler(async (req, res) => {
   try {
     const id = req.params.id;
     const posts = await postModel.findById(id);
+
     if (!posts) {
       res.status(400).json({
         message: "No posts found",
@@ -36,7 +59,9 @@ const findPosts = asyncHandler(async (req, res) => {
 
 const addPost = asyncHandler(async (req, res) => {
   //   try {
-  const { title, author, description, available } = req.body;
+  const { title, description, available } = req.body;
+  const author = req.user.name;
+
   if (!title || !author) {
     res.status(400).json({
       message: "Provide title and author",
@@ -113,4 +138,11 @@ const findPostsByAuthor = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getPosts, addPost, findPosts, editPost, findPostsByAuthor };
+module.exports = {
+  getPosts,
+  getMyPosts,
+  addPost,
+  findPosts,
+  editPost,
+  findPostsByAuthor,
+};
