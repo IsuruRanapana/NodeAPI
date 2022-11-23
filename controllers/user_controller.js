@@ -1,6 +1,8 @@
 const userModel = require('../models/user_model');
 const bcrypt = require('bcrypt');
+const webToken = require('jsonwebtoken');
 const asyncHandler = require("express-async-handler");
+const {compare} = require("bcrypt");
 
 const hashPassword = (password) => {
     let hashedPassword;
@@ -44,4 +46,43 @@ const addUser = asyncHandler(async (req, res) => {
     }
 });
 
-module.exports = {addUser};
+const comparePassword = (password, hashedPassword) => {
+    return new Promise((resolve, reject) => {
+        bcrypt.compare(password, hashedPassword, (err, result) => {
+            if (!err) {
+                resolve(result);
+            } else {
+                reject(null);
+            }
+        })
+    });
+}
+
+const login = asyncHandler(async (req, res) => {
+    try {
+        const {email, password} = req.body;
+        if (!email || !password) {
+            res.status(400).json({message: 'email and password are required'});
+        } else {
+            const user = await userModel.findOne({email});
+            if(!user){
+                res.status(401).json({message: 'user not found'});
+            }else{
+                const validation = await comparePassword(password,user.password);
+                if(!validation){
+                    res.status(401).json({message: 'unauthorized'});
+                }else{
+                    const token =
+                    res.json({
+                        message:"authorized"
+                    })
+                }
+            }
+        }
+    } catch (e) {
+        console.log(e);
+        throw new Error('Cannot login');
+    }
+});
+
+module.exports = {addUser,login};
