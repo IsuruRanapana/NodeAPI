@@ -2,6 +2,7 @@ const userModel = require("../models/user_model");
 const bcrypt = require("bcrypt");
 const jsonWebToken = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
+const { uuid } = require("uuidv4");
 
 const hashPassword = (password) => {
   let hashedPassword;
@@ -30,6 +31,7 @@ const addUser = asyncHandler(async (req, res) => {
           name,
           email,
           password: hashedPassword,
+          card: uuid(),
         });
         if (!user) {
           res.status(500).json({ message: "Cannot create user" });
@@ -87,4 +89,44 @@ const login = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { addUser, login };
+const verify = (req, res) => {
+  res.json(req.user);
+};
+
+const rfidvalidate = asyncHandler(async (req, res) => {
+  try {
+    const { email, card } = req.body;
+    if (!email || !card) {
+      res.status(400).json({
+        message: "Insufficient parameters",
+      });
+    } else {
+      const user = await userModel.findOne({ email });
+      if (!user) {
+        res.status(404).json({
+          message: "User not found",
+        });
+      } else {
+        if (user.card === card) {
+          const token = jsonWebToken.sign(
+            { id: user.id },
+            process.env.APP_SECRET
+          );
+          res.json({
+            message: "authorized",
+            token,
+          });
+        } else {
+          res.status(401).json({
+            message: "Unauthorized",
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.log(error);
+    throw new Error("RFID Validation Error");
+  }
+});
+
+module.exports = { addUser, login, verify, rfidvalidate };
